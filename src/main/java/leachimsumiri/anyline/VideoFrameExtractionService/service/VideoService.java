@@ -27,8 +27,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import java.util.List;
-
 @Service
 public class VideoService {
     private static final Logger LOGGER = LoggerFactory.getLogger(VideoService.class);
@@ -49,8 +47,14 @@ public class VideoService {
         imageRepository.saveAll(images);
     }
 
+    public String getVideoId(MultipartFile file) throws IOException {
+        return FileUtils.generateHashFromByteArray(file.getBytes());
+    }
+
     public Pair<Video, List<Image>> handleFileUpload(MultipartFile file) throws IOException, JCodecException {
-        Video video = new Video("id");//todo id
+        String videoId = getVideoId(file);
+        Video video = new Video(videoId);
+        LOGGER.debug("created Video with id {}", videoId);
 
         List<Image> images = captureImages(file, video);
 

@@ -16,9 +16,35 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Formatter;
 
 public class FileUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileUtils.class);
+
+    public static String generateHashFromByteArray(byte[] bytes) throws IOException {
+        return SHAsum(bytes);
+    }
+
+    //https://stackoverflow.com/questions/1515489/compute-sha-1-of-byte-array
+    public static String SHAsum(byte[] convertme) throws IOException {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            return byteArray2Hex(md.digest(convertme));
+        } catch (NoSuchAlgorithmException e) {
+            LOGGER.error("SHA-1 algorithm couldn't be retrieved from MessageDigest.");
+            throw new IOException(e);
+        }
+    }
+
+    private static String byteArray2Hex(final byte[] hash) {
+        Formatter formatter = new Formatter();
+        for (byte b : hash) {
+            formatter.format("%02x", b);
+        }
+        return formatter.toString();
+    }
 
     public static byte[] pictureToByteArray(Picture frame) throws IOException {
         try {
