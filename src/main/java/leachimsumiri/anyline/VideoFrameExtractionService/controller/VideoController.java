@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -36,5 +37,17 @@ public class VideoController {
         videoService.persistImages(fileUploadResult.getSecond());
 
         return fileUploadResult.getSecond();
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public String handleTooLargeFileUploads() {
+        LOGGER.debug("Large file upload attempted");
+
+        return String.format("File too large. Please upload only files with max %s", multipartMaxFileSize);
+    }
+
+    @ExceptionHandler({IOException.class, JCodecException.class})
+    public String handleIOException() {
+        return "An error occurred at file processing. Please try another file.";
     }
 }
