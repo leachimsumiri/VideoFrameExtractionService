@@ -1,13 +1,31 @@
 package leachimsumiri.anyline.VideoFrameExtractionService.service;
 
+import com.google.gson.Gson;
+import io.imagekit.sdk.ImageKit;
 import leachimsumiri.anyline.VideoFrameExtractionService.model.Image;
+import leachimsumiri.anyline.VideoFrameExtractionService.model.ImageKitResponse;
 import leachimsumiri.anyline.VideoFrameExtractionService.model.Video;
 import leachimsumiri.anyline.VideoFrameExtractionService.repository.ImageRepository;
 import leachimsumiri.anyline.VideoFrameExtractionService.repository.VideoRepository;
+import leachimsumiri.anyline.VideoFrameExtractionService.utils.FileUtils;
+import org.jcodec.api.FrameGrab;
+import org.jcodec.api.JCodecException;
+import org.jcodec.common.io.NIOUtils;
+import org.jcodec.common.model.Picture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import io.imagekit.sdk.models.FileCreateRequest;
+import io.imagekit.sdk.models.results.Result;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.util.List;
 
@@ -29,5 +47,46 @@ public class VideoService {
 
     public void persistImages(List<Image> images) {
         imageRepository.saveAll(images);
+    }
+
+    public Pair<Video, List<Image>> handleFileUpload(MultipartFile file) throws IOException, JCodecException {
+        Video video = new Video();//todo id
+
+        List<Image> images = captureImages(file, video);
+
+        return Pair.of(video, images);
+    }
+
+    private List<Image> captureImages(MultipartFile file, Video video) throws IOException, JCodecException {
+        Picture frame;
+        List<Image> images = new ArrayList<>();
+
+        int frameLength = FileUtils.getFrameLength(file);
+
+        for (int i = 1; i < frameLength; i++) {
+            if (i % FRAME_CAP == 0) {
+                try {
+                    frame = FrameGrab.getFrameFromChannel(NIOUtils.readableChannel(FileUtils.convertMultiPartToFile(file)), i);
+                    if (file.getOriginalFilename() != null) Files.delete(Path.of(file.getOriginalFilename()));
+                } catch (JCodecException | IOException e) {
+                    LOGGER.error("exception at frame grabbing");
+                    throw e;
+                }
+
+                byte[] imageAsBytes = FileUtils.pictureToByteArray(frame);
+                FileCreateRequest fileCreateRequest = new FileCreateRequest(imageAsBytes, file.getName());
+
+                Result result = ImageKit.getInstance().upload(fileCreateRequest);
+                LOGGER.info("response at frame {}: {}", i, result);
+
+                ImageKitResponse imageKitResponse = new Gson().fromJson(result.getRaw(), ImageKitResponse.class);
+                images.add(Image.builder()
+                        .url(imageKitResponse.getUrl())
+                        .video(video)
+                        .build());
+            }
+        }
+
+        return images;
     }
 }
