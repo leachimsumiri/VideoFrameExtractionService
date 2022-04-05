@@ -50,7 +50,7 @@ public class VideoService {
     }
 
     public Pair<Video, List<Image>> handleFileUpload(MultipartFile file) throws IOException, JCodecException {
-        Video video = new Video();//todo id
+        Video video = new Video("id");//todo id
 
         List<Image> images = captureImages(file, video);
 
