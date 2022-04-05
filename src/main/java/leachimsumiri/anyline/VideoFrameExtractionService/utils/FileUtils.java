@@ -16,6 +16,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Formatter;
@@ -33,7 +35,8 @@ public class FileUtils {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             return byteArray2Hex(md.digest(convertme));
         } catch (NoSuchAlgorithmException e) {
-            LOGGER.error("SHA-1 algorithm couldn't be retrieved from MessageDigest.");
+            LOGGER.error("SHA-1 algorithm couldn't be retrieved from MessageDigest:");
+            e.printStackTrace();
             throw new IOException(e);
         }
     }
@@ -54,7 +57,8 @@ public class FileUtils {
 
             return byteArrayOutputStream.toByteArray();
         } catch (IOException e) {
-            LOGGER.error("exception at Picture to byte[] conversion");
+            LOGGER.error("exception at Picture to byte[] conversion:");
+            e.printStackTrace();
             throw e;
         }
     }
@@ -67,7 +71,8 @@ public class FileUtils {
 
             return video_track.getMeta().getTotalFrames();
         } catch (IOException e) {
-            LOGGER.error("exception at getting frameLength from MultipartFile");
+            LOGGER.error("exception at getting frameLength from MultipartFile:");
+            e.printStackTrace();
             throw e;
         }
     }
@@ -81,7 +86,20 @@ public class FileUtils {
 
             return convFile;
         } catch (IOException e) {
-            LOGGER.error("exception at converting MultipartFile to File");
+            LOGGER.error("exception at converting MultipartFile to File:");
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    public static void fileCleanup(MultipartFile file) throws IOException {
+        String fileName = file.getOriginalFilename();
+
+        try {
+            if (fileName != null) Files.deleteIfExists(Path.of(fileName));
+        } catch (IOException e) {
+            LOGGER.error("exception at File cleanup:");
+            e.printStackTrace();
             throw e;
         }
     }

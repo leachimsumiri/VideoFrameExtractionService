@@ -71,7 +71,6 @@ public class VideoService {
             if (i % FRAME_CAP == 0) {
                 try {
                     frame = FrameGrab.getFrameFromChannel(NIOUtils.readableChannel(FileUtils.convertMultiPartToFile(file)), i);
-                    if (file.getOriginalFilename() != null) Files.delete(Path.of(file.getOriginalFilename()));
                 } catch (JCodecException | IOException e) {
                     LOGGER.error("exception at frame grabbing:");
                     e.printStackTrace();
@@ -91,6 +90,8 @@ public class VideoService {
                         .build());
             }
         }
+
+        FileUtils.fileCleanup(file);
 
         return images;
     }
